@@ -8,6 +8,7 @@ import time
 
 from io import BytesIO, StringIO
 from urllib.parse import quote
+from local_lib.constants import *
 
 EGNYTE_CDD_SECTION_KEY = 'cdd'
 EGNYTE_LOADED_ENTRY_ID = 'loaded entry id'
@@ -32,15 +33,18 @@ class EgnyteInterface:
         self.egnyte_client = egnyte.EgnyteClient({'domain': egnyte_domain,
                                                   'access_token': egnyte_access_token})
 
-    def _make_request(self, url, method, params):
+    def _make_request(self, url, method, params=None, json=None, data=None, files=None):
         root_log.debug(url)
-        time.sleep(1)
+        time.sleep(0.2)
         headers = {'Authorization': 'Bearer ' + self.egnyte_access_token}
-        if method == 'GET':
+        if method == GET:
             resp = requests.get(url, headers=headers, params=params)
+        elif method == POST:
+            resp = requests.post(url, headers=headers, params=params, files=files, data=data)
+        elif method == PUT:
+            resp = requests.put(url, headers=headers, params=params, data=data, json=json)
         else:
-            resp = requests.post(url, headers=headers, params=params)
-
+            raise Exception("Unknown method: {}".format(method))
         if resp.status_code == 200:
             return resp.json()
         elif resp.status_code == 404:
@@ -48,16 +52,20 @@ class EgnyteInterface:
         else:
             raise Exception(resp.content)
 
+    def set_metadata(self, data, group_id, namespace):
+        url = "https://{}/pubapi/v1/fs/ids/file/{}/properties/{}".format(self.egnyte_domain, group_id, namespace)
+        resp = self._make_request(url, PUT, json=data)
+        return resp
+
     def get_metadata(self, path):
         url = "https://{}/pubapi/v1/fs{}".format(self.egnyte_domain, quote(path))
-        resp = self._make_request(url, 'GET', params={'list_custom_metadata': True})
+        resp = self._make_request(url, GET, params={'list_custom_metadata': True})
         return resp
 
     def get_file(self, group_id, entry_id):
         url = "https://{}/pubapi/v1/fs-content/ids/file/{}".format(self.egnyte_domain, group_id)
-        resp = self._make_request(url, 'GET', params={'entry_id': entry_id})
+        resp = self._make_request(url, GET, params={'entry_id': entry_id})
         return resp
-
 
     def _check_for_new_events(self, egnyte_path):
         events_to_process = {}
@@ -125,10 +133,8 @@ class EgnyteInterface:
         return cdd_data
 
     def _process_file(self, event, file_metadata, folder_cdd_data):
-        print(folder_cdd_data)
         file_cdd_data = get_metadata_by_key(file_metadata['custom_metadata'], EGNYTE_CDD_SECTION_KEY)
         loaded_entry_id = file_cdd_data.get(EGNYTE_LOADED_ENTRY_ID) if file_cdd_data else None
-        print(loaded_entry_id)
         if not loaded_entry_id or loaded_entry_id != file_metadata['entry_id']:
             #TODO Need to delete run
             # check if loaded entry id is the current one.
@@ -144,5 +150,11 @@ class EgnyteInterface:
             for row in wb[RAW_DATA_SHEET]:
                 c.writerow([cell.value for cell in row])
             f.seek(0)
-            self.cdd_interface.upload_assay_run(f, file_metadata['name'].replace('.xlsx', '.csv'), 'Pluto',
+            slurp_id = self.cdd_interface.upload_assay_run(f, file_metadata['name'].replace('.xlsx', '.csv'), 'Pluto',
                                                 folder_cdd_data[EGNYTE_MAPPING_TEMPLATE_ID], group_entry_id=file_metadata['group_id'] + '|' +file_metadata['entry_id'])
+            resp = self.set_metadata({
+                'status': 'Processing',
+                'slurp id': str(slurp_id),
+                'loaded entry id': file_metadata['entry_id']
+            }, file_metadata['group_id'], 'cdd')
+            print(resp)

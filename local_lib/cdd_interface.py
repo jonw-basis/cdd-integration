@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from local_lib.constants import *
 import json
 import logging
 import requests
@@ -6,11 +7,7 @@ import settings
 
 root_log = logging.getLogger()
 
-GET = 'GET'
-POST = 'POST'
-PUT = 'PUT'
 
-BASE_URL = "https://app.collaborativedrug.com/api/v1/vaults"
 
 CDD_LOAD_PROCESSED_FIELD = 'place'
 CDD_EGNYTE_ENTRY_ID_FIELD = 'conditions'
@@ -25,7 +22,7 @@ class CddInterface:
     def _make_request(self, path, method, params=None, files=None, data=None, json=None):
         resp = None
         headers = {'X-CDD-Token': self.key}
-        url = "{}/{}/{}".format(BASE_URL, self.vault_id, path)
+        url = "{}/{}/{}".format(settings.CDD_BASE_URL, self.vault_id, path)
         if method == GET:
             resp = requests.get(url, headers=headers, params=params)
         elif method == POST:

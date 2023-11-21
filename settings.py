@@ -1,5 +1,5 @@
 from local_settings import *
 
-VAULT_ID = "7655"
+CDD_BASE_URL = "https://app.collaborativedrug.com/api/v1/vaults"
 
 
