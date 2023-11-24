@@ -152,9 +152,11 @@ class EgnyteInterface:
             else:
                 for event in events:
                     event_id = max(event_id, event.id)
+
                     if event.action not in ['create', 'move', 'copy'] or event.data['is_folder'] is True:
                         continue
                     events_to_process.setdefault(event.data['target_path'], []).append(event)
+
                 root_log.info("returned: {} events, event id: {}, last: {}".format(len(events), event_id, final_event_id))
             if not len(events):
                 event_id = final_event_id
@@ -220,13 +222,13 @@ class EgnyteInterface:
     def _upload_assay_runs(self):
         logging.info(self.assay_runs_to_upload.keys())
         for mapping_template_id, assay_run_file_list in self.assay_runs_to_upload.items():
-            integration_uuid = str(uuid.uuid4())
             assay_runs = self.cdd_interface.validate_and_group_file_arrays(assay_run_file_list, mapping_template_id).items()
             for assay_run_group_key, assay_run_list in assay_runs:
+                integration_uuid = str(uuid.uuid4())
                 if self.dry_run:
                     continue
                 else:
-                    assay_run_group_key = "{} - {}".format(datetime.datetime.today().isoformat(), assay_run_group_key)
+                    assay_run_group_key = "{} - {}".format(datetime.date.today().isoformat(), assay_run_group_key)
                     slurp_id = self.cdd_interface.upload_assay_run(assay_run_list, self.project_id,
                                                                    mapping_template_id, integration_uuid, assay_run_group_key + '.csv')
                     logging.info("Slurp: {}".format(slurp_id))

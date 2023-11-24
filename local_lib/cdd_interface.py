@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from local_lib.resources import Protocol
 from io import BytesIO, StringIO
 from local_lib.constants import *
@@ -63,8 +63,7 @@ class CddInterface:
         for response_object in response['objects']:
             assay_name = response_object['name']
             for run in response_object['runs']:
-                print(run)
-                if run.get(CDD_LOAD_PROCESSED_FIELD) == 'Yes' or self.dry_run == True:
+                if run.get(CDD_LOAD_PROCESSED_FIELD) == 'Yes' or not run.get(CDD_INTEGRATION_ID_FIELD) or self.dry_run == True:
                     continue
                 if run.get(CDD_INTEGRATION_ID_FIELD):
                     self.upload_run_attachment(run['id'], run[CDD_INTEGRATION_ID_FIELD], True)
@@ -177,3 +176,18 @@ class CddInterface:
             assay_run_file.validate_and_parse_run_conditions(mapping_template, self.protocols_by_name)
             assay_run_group.setdefault(assay_run_file.run_key, []).append(assay_run_file)
         return assay_run_group
+
+
+    def generate_search_url(self):
+        s = {'authenticity_token': 'St2TGM5WaxDyzxVOp3AiQkY69IddNoYKawXYkTOle2zafqv7v1VH780bQBxNXBX_NaKEnMi7guB9j2pSE8rluQ',
+            'refined': 'true',
+            'protocol_criterion_type[]': 'data set or protocol',
+            'data_set_or_protocol[]': 88067,
+            'protocol_run[]': 'run_date',
+            'protocol_run_after[]': '2023-11-17',
+            'protocol_run_before[]': ''}
+
+        headers = {'X-CDD-Token': self.key}
+        resp = requests.post('https://app.collaborativedrug.com/vaults/7105/searches', headers=headers, data=s)
+        print(resp.content)
+

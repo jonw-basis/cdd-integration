@@ -31,6 +31,8 @@ class AssayRunFile:
     def validate_and_parse_run_conditions(self, mapping_template, protocols_by_name):
         self.mapping_template = mapping_template
         mapping_headers = mapping_template['header_mappings']
+        self._fix_typos(self.data_array[0])
+
         assay_run_columns = {_: i for i, _ in enumerate(self.data_array[0])}
 
         #check to see if columns are present
@@ -62,20 +64,20 @@ class AssayRunFile:
         if well_location_header_idx:
             #validation of plate files
             pass
-
+        if compound_header_idx is not None and batch_header_idx is not None:
         #check for missing batch values
-        for row_num, row in enumerate(self.data_array[1:], start=1):
-            compound_value = row[compound_header_idx]
-            batch_value = row[batch_header_idx]
-            if compound_value and not batch_value:
-                missing_batch_number.add(compound_value)
-            if batch_value and not compound_value:
-                missing_compound_number.add(row_num)
-            if concentration_header_idx and row[concentration_header_idx] is not None and not compound_value:
-                missing_compound_number.add(row_num)
-            for protocol_condition_column_idx, column_name in protocol_condition_column_idxs.items():
-                if compound_value:
-                    self.protocol_conditions.setdefault(column_name, set()).add(row[protocol_condition_column_idx])
+            for row_num, row in enumerate(self.data_array[1:], start=1):
+                compound_value = row[compound_header_idx]
+                batch_value = row[batch_header_idx]
+                if compound_value and not batch_value:
+                    missing_batch_number.add(compound_value)
+                if batch_value and not compound_value:
+                    missing_compound_number.add(row_num)
+                if concentration_header_idx and row[concentration_header_idx] is not None and not compound_value:
+                    missing_compound_number.add(row_num)
+                for protocol_condition_column_idx, column_name in protocol_condition_column_idxs.items():
+                    if compound_value:
+                        self.protocol_conditions.setdefault(column_name, set()).add(row[protocol_condition_column_idx])
 
         if missing_columns or missing_batch_number or missing_compound_number:
             validation_message = ""
@@ -96,3 +98,12 @@ class AssayRunFile:
                 raise Exception("Multiple conditions: File: {} Column: {} Conditions: {}".format(self.source_file_name, column_name, str(conditions)))
             s += "{}-{}|".format(column_name, str(conditions))
         self.run_key = s[:-1]
+
+
+    def _fix_typos(self, header_array):
+        typo_map = {
+            'Bacth': 'Batch'
+        }
+        for idx, header in enumerate(header_array):
+            if header in typo_map:
+                header_array[idx] = typo_map[header]

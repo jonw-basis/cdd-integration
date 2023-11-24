@@ -27,6 +27,5 @@ def main(dry_run):
     # sync_egnyte_assay_files(dry_run)
     process_cdd_assay_runs(dry_run)
 
-
 if __name__ == "__main__":
     main(dry_run=False)

@@ -9,6 +9,7 @@ EGNYTE_MAPPING_TEMPLATE_ID = 'mapping template id'
 
 RAW_DATA_SHEET_NAMES = ['format_raw_data_vault', 'vault_run_upload_format']
 
+
 EGNYTE_FILE_CDD_STATUS = 'status'
 EGNYTE_FILE_CDD_STATUS_SUCCESS = 'Success'
 EGNYTE_FILE_CDD_STATUS_FAILED = 'Failed'
