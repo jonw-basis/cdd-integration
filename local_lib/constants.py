@@ -6,7 +6,8 @@ EGNYTE_CDD_SECTION_KEY = 'cdd'
 EGNYTE_LOADED_ENTRY_ID = 'loaded entry id'
 EGNYTE_INTEGRATION_ID = 'integration id'
 EGNYTE_MAPPING_TEMPLATE_ID = 'mapping template id'
-RAW_DATA_SHEET = 'format_raw_data_vault'
+
+RAW_DATA_SHEET_NAMES = ['format_raw_data_vault', 'vault_run_upload_format']
 
 EGNYTE_FILE_CDD_STATUS = 'status'
 EGNYTE_FILE_CDD_STATUS_SUCCESS = 'Success'

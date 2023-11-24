@@ -13,13 +13,14 @@ root_log = logging.getLogger()
 
 
 class CddInterface:
-    def __init__(self, key, vault_id, egnyte_interface=None):
+    def __init__(self, key, vault_id, egnyte_interface=None, dry_run=False):
         self.key = key
         self.vault_id = vault_id
         self.egnyte_interface = egnyte_interface
         self.mapping_templates = {}
         self.protocols_by_name = {}
         self.protocols_by_id = {}
+        self.dry_run = dry_run
 
     def _make_request(self, path, method, params=None, files=None, data=None, json=None):
         resp = None
@@ -46,7 +47,7 @@ class CddInterface:
         if not self.protocols_by_name.get(protocol_name):
             resp = self._make_request("protocols", GET, params={'names': protocol_name})
             if resp['count'] != 1:
-                raise Exception("found multiple protocols")
+                raise Exception("found multiple protocols: Name: {} Count: {}".format(protocol_name, resp['count']))
             self.protocols_by_name[protocol_name] = Protocol(resp['objects'][0])
         return self.protocols_by_name[protocol_name]
 
@@ -56,19 +57,19 @@ class CddInterface:
 
     def process_runs(self):
         has_data = {}
-        runs_modified_after = (datetime.now() - timedelta(days=4)).isoformat()
+        runs_modified_after = (datetime.now() - timedelta(days=1)).isoformat()
         params = {'runs_modified_after': runs_modified_after, 'page_size': 1000}
         response = self._make_request('protocols', GET, params)
         for response_object in response['objects']:
             assay_name = response_object['name']
             for run in response_object['runs']:
                 print(run)
-                if run.get(CDD_LOAD_PROCESSED_FIELD) == 'Yes':
+                if run.get(CDD_LOAD_PROCESSED_FIELD) == 'Yes' or self.dry_run == True:
                     continue
                 if run.get(CDD_INTEGRATION_ID_FIELD):
                     self.upload_run_attachment(run['id'], run[CDD_INTEGRATION_ID_FIELD], True)
                 self.set_run_fields(run['id'], {CDD_LOAD_PROCESSED_FIELD: 'Yes'})
-                if run['project']['name'] in settings.CDD_PROJECTS:
+                if run['project']['name'] == settings.CDD_PROJECT['name']:
                     has_data.setdefault(run['project']['name'], dict())[assay_name] = True
         # self._post_to_teams(has_data)
         return has_data
@@ -76,7 +77,7 @@ class CddInterface:
     def _post_to_teams(self, data):
         for project_id, assays_dict in data.items():
             assay_list = sorted(assays_dict.keys())
-            project_data = settings.CDD_PROJECTS[project_id]
+            project_data = settings.CDD_PROJECT
             description = "New results available for {} assay{}:\r".format(len(assay_list), "" if len(assay_list) == 1 else "s")
             for assay in assay_list[:7]:
                 description += "- {} \r".format(assay)
@@ -169,7 +170,8 @@ class CddInterface:
         mapping_template = self.get_mapping_template(mapping_template_id)
         for header in mapping_template['header_mappings']:
             protocol_name = header['definition'].get('protocol_name')
-            self.get_protocol_by_name(protocol_name)
+            if protocol_name:
+                self.get_protocol_by_name(protocol_name)
         assay_run_group = {}
         for assay_run_file in assay_run_file_array:
             assay_run_file.validate_and_parse_run_conditions(mapping_template, self.protocols_by_name)
