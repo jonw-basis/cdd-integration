@@ -1,6 +1,7 @@
 GET = 'GET'
 POST = 'POST'
 PUT = 'PUT'
+DELETE = 'DELETE'
 
 EGNYTE_CDD_SECTION_KEY = 'cdd'
 EGNYTE_LOADED_ENTRY_ID = 'loaded entry id'
@@ -18,3 +19,11 @@ EGNYTE_FILE_CDD_STATUS_PROCESSING = 'Processing'
 
 CDD_LOAD_PROCESSED_FIELD = 'place'
 CDD_INTEGRATION_ID_FIELD = 'conditions'
+
+NEW = "new"
+STARTED = "started"
+FINISHED = "finished"
+
+CDD_ASYNC_IN_PROGRESS_STATUS = [NEW, STARTED]
+
+CDD_SLURP_IN_PROGRESS_STATUS = ["committed", "canceled", "rejected", "invalid"]

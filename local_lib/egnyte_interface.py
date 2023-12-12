@@ -133,7 +133,6 @@ class EgnyteInterface:
 
     def _check_for_new_events(self, egnyte_path):
         events_to_process = {}
-
         events_queue = self.egnyte_client.events.filter(folder=egnyte_path, suppress='user')
         final_event_id = events_queue.latest_event_id
         last_event_id = self._get_last_event_id(final_event_id)
@@ -188,8 +187,9 @@ class EgnyteInterface:
         self._update_lock_file(max_event_id)
 
     def _update_lock_file(self, last_event_id):
-        with open(self.lock_file_name, 'a+') as f:
-            f.write("\n{}".format(last_event_id))
+        if not self.dry_run:
+            with open(self.lock_file_name, 'a+') as f:
+                f.write("\n{}".format(last_event_id))
 
     def _get_folder_cdd_data(self, path, depth=0):
         parents = pathlib.Path(path).parents
@@ -225,6 +225,9 @@ class EgnyteInterface:
             assay_runs = self.cdd_interface.validate_and_group_file_arrays(assay_run_file_list, mapping_template_id).items()
             for assay_run_group_key, assay_run_list in assay_runs:
                 integration_uuid = str(uuid.uuid4())
+                for assay_run in assay_run_list:
+                    if not assay_run.valid:
+                        logging.info("Invalid File: {} Message: {}".format(assay_run.source_file_name, assay_run.validation_message))
                 if self.dry_run:
                     continue
                 else:
@@ -233,7 +236,6 @@ class EgnyteInterface:
                                                                    mapping_template_id, integration_uuid, assay_run_group_key + '.csv')
                     logging.info("Slurp: {}".format(slurp_id))
                     for assay_run in assay_run_list:
-                        print(assay_run.validation_message)
                         metadata = {'status': EGNYTE_FILE_CDD_STATUS_PROCESSING if assay_run.valid is True else EGNYTE_FILE_CDD_STATUS_FAILED,
                             'slurp id': str(slurp_id) if slurp_id else 0,
                             'loaded entry id': assay_run.entry_id,

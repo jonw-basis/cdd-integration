@@ -1,6 +1,10 @@
 import logging
+import smtplib
 import sys
+
+from email.message import EmailMessage
 from io import StringIO
+
 
 def set_up_logging():
 
@@ -31,3 +35,24 @@ def set_up_logging():
     return log_stream, root_log
 
 
+def send_email(recipients: list, subject: str, body: str, smtp_config: dict,
+                     from_address: str = None, debug: bool = True):
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = smtp_config['USERNAME'] if from_address is None else from_address
+    msg['To'] = recipients
+    msg.set_content(body)
+    server = smtplib.SMTP(smtp_config['HOST'], smtp_config['PORT'])
+    if debug:
+        server.set_debuglevel(1)
+    server.starttls()
+    server.login(smtp_config['USERNAME'], smtp_config['PASSWORD'])
+    server.send_message(msg)
+    server.quit()
+
+
+def strip_value(s):
+    try:
+        return s.strip()
+    except:
+        return s

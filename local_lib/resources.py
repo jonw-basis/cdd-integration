@@ -1,3 +1,4 @@
+from local_lib import common
 class Protocol:
 
     def __init__(self, protocol_definition):
@@ -33,8 +34,7 @@ class AssayRunFile:
         mapping_headers = mapping_template['header_mappings']
         self._fix_typos(self.data_array[0])
 
-        assay_run_columns = {_: i for i, _ in enumerate(self.data_array[0])}
-
+        assay_run_columns = {common.strip_value(_): i for i, _ in enumerate(self.data_array[0])}
         #check to see if columns are present
         missing_columns = []
         missing_batch_number = set()
@@ -80,7 +80,7 @@ class AssayRunFile:
                         self.protocol_conditions.setdefault(column_name, set()).add(row[protocol_condition_column_idx])
 
         if missing_columns or missing_batch_number or missing_compound_number:
-            validation_message = ""
+            validation_message = "File: {} ".format(self.source_file_name)
             if missing_columns:
                 validation_message += " Columns Missing: {}".format(", ".join(missing_columns))
             if missing_batch_number:

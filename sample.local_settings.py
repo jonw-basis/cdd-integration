@@ -9,7 +9,6 @@ CDD_PROJECT = {'name': "",
                     'webhook_url': ""}
 
 
-
 #EGNYTE
 EGNYTE_DOMAIN = ".egnyte.com"
 EGNYTE_ACCESS_TOKEN = ""
